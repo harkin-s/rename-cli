@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::fs;
 
 use async_openai::{
     types::{
@@ -10,8 +11,10 @@ use async_openai::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let client = Client::new();
+    let file_names = get_file_names("/Users/sean/Downloads/Our.Flag.Means.Death.S01.COMPLETE.720p.HMAX.WEBRip.x264-GalaxyTV[TGx]")?;
 
+    println!("{:?}", file_names);
+    let client = Client::new();
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
         .model("gpt-3.5-turbo")
@@ -40,6 +43,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let response = client.chat().create(request).await?;
 
     println!("\nResponse:\n");
+    println!("Usage: {:?}", response.usage);
+
     for choice in response.choices {
         println!(
             "{}: Role: {}  Content: {:?}",
@@ -48,4 +53,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+fn get_file_names(folder_path: &str) -> Result<Vec<String>, std::io::Error> {
+    let file_names: Vec<String> = fs::read_dir(folder_path)?
+        .filter_map(|entry| {
+            entry.ok().and_then(|e| {
+                e.file_name()
+                    .into_string()
+                    .ok()
+                    .map(|s| format!("{}/{}", folder_path, s))
+            })
+        })
+        .collect();
+
+    Ok(file_names)
 }
